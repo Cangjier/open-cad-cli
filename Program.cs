@@ -1,16 +1,13 @@
-﻿using TidyConsole;
+﻿using OpenCad.Cli;
 using TidyHPC.Routers.Args;
 
 async Task init(
     [ArgsIndex] string cadName,
     [Args] string[]? fullArgs = null)
 {
-    await Consoles.ExecuteCommand(Environment.CurrentDirectory, $"tscl run {cadName} init --application-name open-cad --repository https://github.com/Cangjier/open-cad.git",
-        new Events(async line =>
-        {
-            Console.WriteLine(line);
-            await Task.CompletedTask;
-        }, null));
+    var cmd = $"tscl run {cadName} init --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
+    Console.WriteLine(cmd);
+    await Util.cmdAsync(Environment.CurrentDirectory, cmd);
 }
 
 

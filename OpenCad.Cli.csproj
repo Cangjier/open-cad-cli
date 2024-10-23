@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TidyConsole" Version="1.0.5" />
     <PackageReference Include="TidyHPC" Version="1.0.10" />
   </ItemGroup>
 
