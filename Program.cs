@@ -5,7 +5,7 @@ async Task init(
     [ArgsIndex] string cadName,
     [Args] string[]? fullArgs = null)
 {
-    await Consoles.ExecuteCommand(Environment.CurrentDirectory, $"tscl run {cadName} init --application-name open-cad --repository https://github.com/Cangjier/open-cad-cli.git",
+    await Consoles.ExecuteCommand(Environment.CurrentDirectory, $"tscl run {cadName} init --application-name open-cad --repository https://github.com/Cangjier/open-cad.git",
         new Events(async line =>
         {
             Console.WriteLine(line);
