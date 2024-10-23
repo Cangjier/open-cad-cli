@@ -31,7 +31,12 @@ async Task check()
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
-    var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
+    var cmdTail = "--application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
+    var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} {cmdTail}";
+    if (fullArgs.Length == 1 && fullArgs[0] == "list")
+    {
+        cmd = $"tscl list {cmdTail}";
+    }
     Console.WriteLine(cmd);
     var code = await Util.cmdAsync(Environment.CurrentDirectory, cmd);
     if (code != 0)
