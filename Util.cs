@@ -40,13 +40,21 @@ internal class Util
                 Arguments = Util.GetShellArguments(commandLine),
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WorkingDirectory = workingDirectory
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
             };
 
             using Process process = new() { StartInfo = startInfo };
             // 启动进程
             process.Start();
+            // 读取标准输出并打印  
+            process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            process.BeginOutputReadLine();
 
+            // 读取标准错误并打印  
+            process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            process.BeginErrorReadLine();
             // 等待进程退出
             await process.WaitForExitAsync();
 
