@@ -37,11 +37,11 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
     {
         cmd = $"tscl list {cmdTail}";
     }
-    Console.WriteLine(cmd);
+    //Console.WriteLine(cmd);
     var code = await Util.cmdAsync(Environment.CurrentDirectory, cmd);
     if (code != 0)
     {
-        Console.WriteLine($"cmd failed, {code}");
+        //Console.WriteLine($"cmd failed, {code}");
     }
 });
 
