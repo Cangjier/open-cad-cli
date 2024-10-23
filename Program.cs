@@ -29,7 +29,7 @@ async Task check()
 }
 
 ArgsRouter argsRouter = new();
-argsRouter.Register([string.Empty], async ([Args] string[] fullArgs) =>
+argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
     var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
     Console.WriteLine(cmd);
