@@ -33,7 +33,11 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
     var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
     Console.WriteLine(cmd);
-    await Util.cmdAsync(Environment.CurrentDirectory, cmd);
+    var code = await Util.cmdAsync(Environment.CurrentDirectory, cmd);
+    if (code != 0)
+    {
+        Console.WriteLine($"cmd failed, {code}");
+    }
 });
 
 await argsRouter.Route(args);

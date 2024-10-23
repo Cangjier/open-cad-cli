@@ -34,14 +34,13 @@ internal class Util
     {
         try
         {
-            // 创建一个新的进程启动信息
             ProcessStartInfo startInfo = new()
             {
-                FileName = Util.GetShell(), // 根据系统获取合适的 shell
-                Arguments = Util.GetShellArguments(commandLine), // shell 的参数，包括命令行
-                UseShellExecute = false,        // 启用 shell 执行，避免重定向
-                CreateNoWindow = true,        // 允许创建窗口
-                WorkingDirectory = workingDirectory // 设置工作目录
+                FileName = Util.GetShell(),
+                Arguments = Util.GetShellArguments(commandLine),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = workingDirectory
             };
 
             using Process process = new() { StartInfo = startInfo };
