@@ -1,15 +1,6 @@
 ﻿using OpenCad.Cli;
+using TidyHPC.Extensions;
 using TidyHPC.Routers.Args;
-
-async Task init(
-    [ArgsIndex] string cadName,
-    [Args] string[]? fullArgs = null)
-{
-    var cmd = $"tscl run {cadName} init --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
-    Console.WriteLine(cmd);
-    await Util.cmdAsync(Environment.CurrentDirectory, cmd);
-}
-
 
 bool checkContainsTscl()
 {
@@ -38,6 +29,11 @@ async Task check()
 }
 
 ArgsRouter argsRouter = new();
-argsRouter.Register(["init"], init);
+argsRouter.Register([string.Empty], async ([Args] string[] fullArgs) =>
+{
+    var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} --application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
+    Console.WriteLine(cmd);
+    await Util.cmdAsync(Environment.CurrentDirectory, cmd);
+});
 
 await argsRouter.Route(args);
