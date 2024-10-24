@@ -46,7 +46,11 @@ async Task installEnvironment()
             Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
         }
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
-        File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
+        var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
+        if (File.Exists(binSelfPath) == false)
+        {
+            File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
+        }
     }
 }
 
