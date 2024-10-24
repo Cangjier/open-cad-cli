@@ -5,18 +5,22 @@ using TidyHPC.Routers.Args;
 
 bool checkContainsTscl()
 {
+    Console.WriteLine("checking tscl.exe");
     var paths = Environment.GetEnvironmentVariable("Path")?.Split(';');
     if (paths == null)
     {
+        Console.WriteLine($"Environment Variable Path is null");
         return false;
     }
     foreach (var path in paths)
     {
         if (File.Exists(Path.Combine(path, "tscl.exe")))
         {
+            Console.WriteLine("tscl.exe exists");
             return true;
         }
     }
+    Console.WriteLine("tscl.exe not exists");
     return false;
 }
 
@@ -31,7 +35,8 @@ async Task installEnvironment()
     if (checkContainsTscl() == false)
     {
         var httpProxy = await getHttpProxy();
-        if(httpProxy != "")
+        Console.WriteLine($"httpProxy: {httpProxy}");
+        if (httpProxy != "")
         {
             axios.setProxy(httpProxy);
         }
@@ -45,6 +50,7 @@ async Task installEnvironment()
         {
             Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
         }
+        Console.WriteLine("installing tscl.exe");
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
         var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
         if (File.Exists(binSelfPath) == false)
