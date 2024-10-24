@@ -1,4 +1,5 @@
 ﻿using OpenCad.Cli;
+using System.Reflection;
 using TidyHPC.Extensions;
 using TidyHPC.Routers.Args;
 
@@ -45,6 +46,7 @@ async Task installEnvironment()
             Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
         }
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
+        File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
     }
 }
 
@@ -52,6 +54,12 @@ ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
     await installEnvironment();
+    if (fullArgs.Length == 0)
+    {
+        var name = Assembly.GetExecutingAssembly().GetName();
+        Console.WriteLine($"{name.Name} {name.Version}");
+        return;
+    }
     var cmdTail = "--application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
     var cmd = $"tscl run {fullArgs.Join(" ")} {cmdTail}";
     if (fullArgs.Length == 1 && fullArgs[0] == "list")
