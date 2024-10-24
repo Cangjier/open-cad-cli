@@ -19,18 +19,39 @@ bool checkContainsTscl()
     return false;
 }
 
-async Task check()
+async Task<string> getHttpProxy()
+{
+    return await Util.cmdAsync2(Environment.CurrentDirectory, "git config --global http.proxy");
+}
+
+async Task installEnvironment()
 {
     // 检查所有Path下是否存在tscl.exe
-    if (checkContainsTscl()==false)
+    if (checkContainsTscl() == false)
     {
-        Console.WriteLine("请先安装tscl");
+        var httpProxy = await getHttpProxy();
+        if(httpProxy != "")
+        {
+            axios.setProxy(httpProxy);
+        }
+        var binDirectory = "C:\\bin";
+        if(Directory.Exists(binDirectory) == false)
+        {
+            Directory.CreateDirectory(binDirectory);
+        }
+        var path = Environment.GetEnvironmentVariable("Path");
+        if (path.Contains(binDirectory) == false)
+        {
+            Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
+        }
+        await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
     }
 }
 
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
+    await installEnvironment();
     var cmdTail = "--application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
     var cmd = $"tscl run {fullArgs.Join(" ")} {cmdTail}";
     if (fullArgs.Length == 1 && fullArgs[0] == "list")

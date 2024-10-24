@@ -1,8 +1,13 @@
 ﻿using System.Diagnostics;
+using System.Text;
+using TidyHPC.Extensions;
+using TidyHPC.LiteJson;
 
 namespace OpenCad.Cli;
 internal class Util
 {
+    public static UTF8Encoding UTF8 { get; } = new(false);
+
     public static string GetShell()
     {
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -65,6 +70,47 @@ internal class Util
         {
             Console.WriteLine("An error occurred: " + ex.Message);
             return -1; // 错误时返回 -1
+        }
+    }
+
+    public static async Task<string> cmdAsync2(string workingDirectory, string commandLine)
+    {
+        try
+        {
+            // 创建一个新的进程启动信息
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = Util.GetShell(), // 根据系统获取合适的 shell
+                Arguments = Util.GetShellArguments(commandLine), // shell 的参数，包括命令行
+                UseShellExecute = false,        // 启用 shell 执行，避免重定向
+                CreateNoWindow = true,        // 允许创建窗口
+                WorkingDirectory = workingDirectory, // 设置工作目录
+                RedirectStandardOutput = true, // 重定向标准输出
+            };
+
+            using Process process = new() { StartInfo = startInfo };
+            List<string> lines = new();
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    lines.Add(e.Data);
+                }
+            };
+            // 启动进程
+            process.Start();
+            // 开始异步读取输出
+            process.BeginOutputReadLine();
+            // 等待进程退出
+            await process.WaitForExitAsync();
+
+            // 返回进程的退出代码
+            return lines.Join("\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred: " + ex.Message);
+            return "";
         }
     }
 }
