@@ -113,4 +113,14 @@ internal class Util
             return "";
         }
     }
+
+    public static async Task<int> execAsync(string path, params string[] args)
+    {
+        using var process = new Process();
+        process.StartInfo.FileName = path;
+        args.Foreach(process.StartInfo.ArgumentList.Add);
+        process.Start();
+        await process.WaitForExitAsync();
+        return process.ExitCode;
+    }
 }

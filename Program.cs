@@ -1,5 +1,6 @@
 ﻿using OpenCad.Cli;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using TidyHPC.Extensions;
 using TidyHPC.Routers.Args;
 
@@ -24,6 +25,12 @@ bool checkContainsTscl()
     return false;
 }
 
+async Task<bool> checkContainsGit()
+{
+    var output = await Util.cmdAsync2(Environment.CurrentDirectory, "git --version");
+    return output.Trim() != "";
+}
+
 async Task<string> getHttpProxy()
 {
     return await Util.cmdAsync2(Environment.CurrentDirectory, "git config --global http.proxy");
@@ -31,6 +38,26 @@ async Task<string> getHttpProxy()
 
 async Task installEnvironment()
 {
+    if (await checkContainsGit()==false)
+    {
+        var response = await axios.get("https://git-scm.com/download/win",new axiosConfig()
+        {
+            responseType = "text"
+        });
+        if(response.data is string dataHtml)
+        {
+            // 通过正则表达式获取所有a.href
+            var hrefRegex = new Regex("<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", RegexOptions.IgnoreCase);
+            var hrefMatches = hrefRegex.Matches(dataHtml);
+            var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
+            // 获取最新版本的Git
+            var gitUrl = hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault();
+            var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
+            await axios.download(gitUrl, downloadPath);
+            // git 静默安装
+            await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
+        }
+    }
     // 检查所有Path下是否存在tscl.exe
     if (checkContainsTscl() == false)
     {
