@@ -36,27 +36,41 @@ async Task<string> getHttpProxy()
     return await Util.cmdAsync2(Environment.CurrentDirectory, "git config --global http.proxy");
 }
 
-async Task installEnvironment()
+async Task installGit()
+{
+    var response = await axios.get("https://git-scm.com/download/win", new axiosConfig()
+    {
+        responseType = "text"
+    });
+    if (response.data is string dataHtml)
+    {
+        // 通过正则表达式获取所有a.href
+        var hrefRegex = new Regex("<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", RegexOptions.IgnoreCase);
+        var hrefMatches = hrefRegex.Matches(dataHtml);
+        var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
+        // 获取最新版本的Git
+        var gitUrl = hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault();
+        var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
+        await axios.download(gitUrl, downloadPath);
+        // git 静默安装
+        await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
+    }
+}
+async Task<bool> installEnvironment()
 {
     if (await checkContainsGit()==false)
     {
-        var response = await axios.get("https://git-scm.com/download/win",new axiosConfig()
+        try
         {
-            responseType = "text"
-        });
-        if(response.data is string dataHtml)
-        {
-            // 通过正则表达式获取所有a.href
-            var hrefRegex = new Regex("<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", RegexOptions.IgnoreCase);
-            var hrefMatches = hrefRegex.Matches(dataHtml);
-            var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
-            // 获取最新版本的Git
-            var gitUrl = hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault();
-            var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
-            await axios.download(gitUrl, downloadPath);
-            // git 静默安装
-            await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
+            await installGit();
         }
+        catch
+        {
+            Console.WriteLine($"Git Download: https://git-scm.com/downloads/win");
+            Console.WriteLine("Please install git first");
+            return false;
+        }
+        
     }
     // 检查所有Path下是否存在tscl.exe
     if (checkContainsTscl() == false)
@@ -85,12 +99,16 @@ async Task installEnvironment()
             File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
         }
     }
+    return true;
 }
 
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
-    await installEnvironment();
+    if(await installEnvironment()==false)
+    {
+        return;
+    }
     if (fullArgs.Length == 0)
     {
         var name = Assembly.GetExecutingAssembly().GetName();
