@@ -6,7 +6,6 @@ using TidyHPC.Routers.Args;
 
 bool checkContainsTscl()
 {
-    Console.WriteLine("checking tscl.exe");
     var paths = Environment.GetEnvironmentVariable("Path")?.Split(';');
     if (paths == null)
     {
@@ -17,11 +16,9 @@ bool checkContainsTscl()
     {
         if (File.Exists(Path.Combine(path, "tscl.exe")))
         {
-            Console.WriteLine("tscl.exe exists");
             return true;
         }
     }
-    Console.WriteLine("tscl.exe not exists");
     return false;
 }
 
