@@ -142,6 +142,8 @@ async Task<bool> installEnvironment()
         catch(Exception e)
         {
             Logger.Error(e);
+            Console.WriteLine(e);
+            Console.WriteLine("-".PadRight(32, '-'));
             Console.WriteLine($"Git Download: https://git-scm.com/downloads/win");
             Console.WriteLine("Please install git first");
             return false;
