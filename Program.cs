@@ -120,6 +120,7 @@ async Task installGit()
     if (response.data is string dataHtml)
     {
         // 通过正则表达式获取所有a.href
+        Logger.Info(dataHtml);
         var hrefRegex = new Regex("<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", RegexOptions.IgnoreCase);
         var hrefMatches = hrefRegex.Matches(dataHtml);
         var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
