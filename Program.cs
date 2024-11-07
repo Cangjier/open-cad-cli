@@ -61,55 +61,10 @@ async Task<bool> checkContainsGit()
     return output.Trim() != "";
 }
 
-async Task<string> getHttpProxy()
+async Task<string> getGitProxy()
 {
     return await Util.cmdAsync2(Environment.CurrentDirectory, "git config --global http.proxy");
 }
-
-bool IsHostingBundleInstalled(string version)
-{
-    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-    {
-        // 注册表路径
-        string uninstallKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-
-        using (RegistryKey? uninstallKey = Registry.LocalMachine.OpenSubKey(uninstallKeyPath))
-        {
-            if (uninstallKey == null)
-                return false;
-
-            // 遍历所有子项
-            foreach (string subkeyName in uninstallKey.GetSubKeyNames())
-            {
-                using (RegistryKey? subkey = uninstallKey.OpenSubKey(subkeyName))
-                {
-                    if (subkey == null)
-                        continue;
-
-                    // 获取 DisplayName 和 DisplayVersion
-                    string? displayName = subkey.GetValue("DisplayName") as string;
-                    string? displayVersion = subkey.GetValue("DisplayVersion") as string;
-
-                    // 检查名称和版本是否匹配
-                    if (!string.IsNullOrEmpty(displayName) &&
-                        displayName.Contains("Microsoft ASP.NET Core") &&
-                        displayVersion == version)
-                    {
-                        return true; // 找到匹配项，已安装
-                    }
-                }
-            }
-        }
-
-        return false; // 未找到匹配项
-    }
-    else
-    {
-        return false;
-    }
-}
-
-
 
 async Task installGit()
 {
@@ -119,6 +74,7 @@ async Task installGit()
     var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
     await axios.download(gitUrl, downloadPath);
     // git 静默安装
+    Console.WriteLine("Installing Git");
     await Util.execAsync(downloadPath, "/VERYSILENT","/NORESTART","/NOCANCEL","/SP-","CLOSEAPPLICATIONS","/RESTARTAPPLICATIONS","/COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
 }
 async Task<bool> installEnvironment()
@@ -154,18 +110,21 @@ async Task<bool> installEnvironment()
         {
             Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
         }
-        Console.WriteLine("installing tscl.exe");
+        Console.WriteLine("Downloading tscl");
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
+        Console.WriteLine("Installing tscl");
         var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
         if (File.Exists(binSelfPath) == false)
         {
             File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
         }
-        if(IsHostingBundleInstalled("8.0.10") == false)
+        if((await Util.cmdAsync2(Environment.CurrentDirectory, "dotnet --list-runtimes")).Contains("Microsoft.NETCore.App 8.0.10")==false)
         {
             var dotNetPath = $"{downloadDirectory}/dotnet-hosting-8.0.10-win.exe";
+            Console.WriteLine("Downloading dotnet-hosting-8.0.10-win.exe");
             await axios.download("https://download.visualstudio.microsoft.com/download/pr/dfbcd81d-e383-4c92-a174-5079bde0a180/b05bcf7656d1ea900bd23c4f1939a642/dotnet-hosting-8.0.10-win.exe",
                 dotNetPath);
+            Console.WriteLine("Installing dotnet-hosting-8.0.10-win.exe");
             await Util.execAsync(dotNetPath, "/install", "/quiet", "/norestart");
         }
     }
@@ -176,17 +135,17 @@ async Task<bool> installEnvironment()
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
-    var httpProxy = await getHttpProxy();
-    var iwebProxy = WebRequest.DefaultWebProxy;
-    if (iwebProxy?.GetProxy(new Uri("http://www.example.com")) is Uri webProxy)
+    var gitProxy = await getGitProxy();
+    var systemProxy = WebRequest.DefaultWebProxy;
+    if (systemProxy?.GetProxy(new Uri("http://www.example.com")) is Uri webProxy)
     {
-        Console.WriteLine($"webProxy: {webProxy}");
+        Console.WriteLine($"System Proxy: {webProxy}");
         axios.setProxy(webProxy.ToString());
     }
-    else if (httpProxy != "")
+    else if (gitProxy != "")
     {
-        Console.WriteLine($"httpProxy: {httpProxy}");
-        axios.setProxy(httpProxy);
+        Console.WriteLine($"Git Proxy: {gitProxy}");
+        axios.setProxy(gitProxy);
     }
     if (await installEnvironment()==false)
     {
@@ -204,7 +163,6 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
     {
         cmd = $"tscl list {cmdTail}";
     }
-    //Console.WriteLine(cmd);
     var code = await Util.cmdAsync(Environment.CurrentDirectory, cmd);
     if (code != 0)
     {
