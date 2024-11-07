@@ -149,18 +149,7 @@ async Task<bool> installEnvironment()
     // 检查所有Path下是否存在tscl.exe
     if (checkContainsTscl() == false)
     {
-        var httpProxy = await getHttpProxy();
-        var iwebProxy = WebRequest.DefaultWebProxy;
-        Console.WriteLine($"httpProxy: {httpProxy}");
-        if (iwebProxy is WebProxy webProxy && webProxy.Address != null)
-        {
-            Console.WriteLine($"webProxy: {webProxy.Address}");
-            axios.setProxy(webProxy.Address.ToString());
-        }
-        else if (httpProxy != "")
-        {
-            axios.setProxy(httpProxy);
-        }
+        
         var binDirectory = "C:\\bin";
         var downloadDirectory = GetDownloadFolderPath();
         if (Directory.Exists(binDirectory) == false)
@@ -190,10 +179,23 @@ async Task<bool> installEnvironment()
     return true;
 }
 
+
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
-    if(await installEnvironment()==false)
+    var httpProxy = await getHttpProxy();
+    var iwebProxy = WebRequest.DefaultWebProxy;
+    Console.WriteLine($"httpProxy: {httpProxy}");
+    if (iwebProxy is WebProxy webProxy && webProxy.Address != null)
+    {
+        Console.WriteLine($"webProxy: {webProxy.Address}");
+        axios.setProxy(webProxy.Address.ToString());
+    }
+    else if (httpProxy != "")
+    {
+        axios.setProxy(httpProxy);
+    }
+    if (await installEnvironment()==false)
     {
         return;
     }
