@@ -124,7 +124,8 @@ async Task installGit()
         var hrefMatches = hrefRegex.Matches(dataHtml);
         var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
         // 获取最新版本的Git
-        var gitUrl = hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault();
+        var gitUrl = "https://git-scm.com/" + hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault()?.TrimStart('/');
+        Console.WriteLine($"Downloading {gitUrl}");
         var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
         await axios.download(gitUrl, downloadPath);
         // git 静默安装
