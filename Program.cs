@@ -113,25 +113,13 @@ bool IsHostingBundleInstalled(string version)
 
 async Task installGit()
 {
-    var response = await axios.get("https://git-scm.com/download/win", new axiosConfig()
-    {
-        responseType = "text"
-    });
-    if (response.data is string dataHtml)
-    {
-        // 通过正则表达式获取所有a.href
-        Logger.Info(dataHtml);
-        var hrefRegex = new Regex("<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", RegexOptions.IgnoreCase);
-        var hrefMatches = hrefRegex.Matches(dataHtml);
-        var hrefs = hrefMatches.Select(m => m.Groups[1].Value).ToArray();
-        // 获取最新版本的Git
-        var gitUrl = "https://git-scm.com/" + hrefs.Where(href => href.Contains("Git-") && href.Contains("-64-bit.exe")).FirstOrDefault()?.TrimStart('/');
-        Console.WriteLine($"Downloading {gitUrl}");
-        var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
-        await axios.download(gitUrl, downloadPath);
-        // git 静默安装
-        await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
-    }
+    // 获取最新版本的Git
+    var gitUrl = "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.2/Git-2.47.0.2-64-bit.exe";
+    Console.WriteLine($"Downloading {gitUrl}");
+    var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
+    await axios.download(gitUrl, downloadPath);
+    // git 静默安装
+    await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
 }
 async Task<bool> installEnvironment()
 {
