@@ -1,8 +1,40 @@
-﻿using OpenCad.Cli;
+﻿using Microsoft.Win32;
+using OpenCad.Cli;
+using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TidyHPC.Extensions;
 using TidyHPC.Routers.Args;
+
+
+string GetDownloadFolderPath()
+{
+    if(Environment.OSVersion.Platform != PlatformID.Win32NT)
+    {
+        string downloadFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+        // 打开注册表项路径
+        using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"))
+        {
+            if (key != null&& key.GetValue("{374DE290-123F-4565-9164-39C4925E467B}") is string valueString)
+            {
+                // 获取 "Downloads" 文件夹的路径
+                downloadFolderPath = valueString;
+
+                // 如果路径包含环境变量, 需要解析为完整路径
+                downloadFolderPath = Environment.ExpandEnvironmentVariables(downloadFolderPath);
+            }
+        }
+
+        return downloadFolderPath;
+    }
+    else
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+    }
+
+}
 
 bool checkContainsTscl()
 {
@@ -32,6 +64,51 @@ async Task<string> getHttpProxy()
 {
     return await Util.cmdAsync2(Environment.CurrentDirectory, "git config --global http.proxy");
 }
+
+bool IsHostingBundleInstalled(string version)
+{
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+        // 注册表路径
+        string uninstallKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
+        using (RegistryKey? uninstallKey = Registry.LocalMachine.OpenSubKey(uninstallKeyPath))
+        {
+            if (uninstallKey == null)
+                return false;
+
+            // 遍历所有子项
+            foreach (string subkeyName in uninstallKey.GetSubKeyNames())
+            {
+                using (RegistryKey? subkey = uninstallKey.OpenSubKey(subkeyName))
+                {
+                    if (subkey == null)
+                        continue;
+
+                    // 获取 DisplayName 和 DisplayVersion
+                    string? displayName = subkey.GetValue("DisplayName") as string;
+                    string? displayVersion = subkey.GetValue("DisplayVersion") as string;
+
+                    // 检查名称和版本是否匹配
+                    if (!string.IsNullOrEmpty(displayName) &&
+                        displayName.Contains("Microsoft ASP.NET Core") &&
+                        displayVersion == version)
+                    {
+                        return true; // 找到匹配项，已安装
+                    }
+                }
+            }
+        }
+
+        return false; // 未找到匹配项
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
 
 async Task installGit()
 {
@@ -73,18 +150,25 @@ async Task<bool> installEnvironment()
     if (checkContainsTscl() == false)
     {
         var httpProxy = await getHttpProxy();
+        var iwebProxy = WebRequest.DefaultWebProxy;
         Console.WriteLine($"httpProxy: {httpProxy}");
-        if (httpProxy != "")
+        if (iwebProxy is WebProxy webProxy && webProxy.Address != null)
+        {
+            Console.WriteLine($"webProxy: {webProxy.Address}");
+            axios.setProxy(webProxy.Address.ToString());
+        }
+        else if (httpProxy != "")
         {
             axios.setProxy(httpProxy);
         }
         var binDirectory = "C:\\bin";
-        if(Directory.Exists(binDirectory) == false)
+        var downloadDirectory = GetDownloadFolderPath();
+        if (Directory.Exists(binDirectory) == false)
         {
             Directory.CreateDirectory(binDirectory);
         }
         var path = Environment.GetEnvironmentVariable("Path");
-        if (path.Contains(binDirectory) == false)
+        if (path?.Contains(binDirectory) == false)
         {
             Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
         }
@@ -94,6 +178,13 @@ async Task<bool> installEnvironment()
         if (File.Exists(binSelfPath) == false)
         {
             File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
+        }
+        if(IsHostingBundleInstalled("8.0.10") == false)
+        {
+            var dotNetPath = $"{downloadDirectory}/dotnet-hosting-8.0.10-win.exe";
+            await axios.download("https://download.visualstudio.microsoft.com/download/pr/dfbcd81d-e383-4c92-a174-5079bde0a180/b05bcf7656d1ea900bd23c4f1939a642/dotnet-hosting-8.0.10-win.exe",
+                dotNetPath);
+            await Util.execAsync(dotNetPath, "/install", "/quiet", "/norestart");
         }
     }
     return true;
