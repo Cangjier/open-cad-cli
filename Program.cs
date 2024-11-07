@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TidyHPC.Extensions;
+using TidyHPC.Loggers;
 using TidyHPC.Routers.Args;
 
 
@@ -138,8 +139,9 @@ async Task<bool> installEnvironment()
         {
             await installGit();
         }
-        catch
+        catch(Exception e)
         {
+            Logger.Error(e);
             Console.WriteLine($"Git Download: https://git-scm.com/downloads/win");
             Console.WriteLine("Please install git first");
             return false;
@@ -149,7 +151,6 @@ async Task<bool> installEnvironment()
     // 检查所有Path下是否存在tscl.exe
     if (checkContainsTscl() == false)
     {
-        
         var binDirectory = "C:\\bin";
         var downloadDirectory = GetDownloadFolderPath();
         if (Directory.Exists(binDirectory) == false)
@@ -185,7 +186,6 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
     var httpProxy = await getHttpProxy();
     var iwebProxy = WebRequest.DefaultWebProxy;
-    Console.WriteLine($"httpProxy: {httpProxy}");
     if (iwebProxy?.GetProxy(new Uri("http://www.example.com")) is Uri webProxy)
     {
         Console.WriteLine($"webProxy: {webProxy}");
@@ -193,6 +193,7 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
     }
     else if (httpProxy != "")
     {
+        Console.WriteLine($"httpProxy: {httpProxy}");
         axios.setProxy(httpProxy);
     }
     if (await installEnvironment()==false)
