@@ -186,10 +186,10 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
     var httpProxy = await getHttpProxy();
     var iwebProxy = WebRequest.DefaultWebProxy;
     Console.WriteLine($"httpProxy: {httpProxy}");
-    if (iwebProxy is WebProxy webProxy && webProxy.Address != null)
+    if (iwebProxy?.GetProxy(new Uri("http://www.example.com")) is Uri webProxy)
     {
-        Console.WriteLine($"webProxy: {webProxy.Address}");
-        axios.setProxy(webProxy.Address.ToString());
+        Console.WriteLine($"webProxy: {webProxy}");
+        axios.setProxy(webProxy.ToString());
     }
     else if (httpProxy != "")
     {
