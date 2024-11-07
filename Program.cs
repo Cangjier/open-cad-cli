@@ -77,7 +77,7 @@ async Task installGit()
     Console.WriteLine("Installing Git");
     await Util.execAsync(downloadPath, "/VERYSILENT","/NORESTART","/NOCANCEL","/SP-","CLOSEAPPLICATIONS","/RESTARTAPPLICATIONS","/COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
 }
-async Task<bool> installEnvironment()
+async Task<bool> installEnvironment(bool forceUpdate)
 {
     if (await checkContainsGit()==false)
     {
@@ -97,9 +97,9 @@ async Task<bool> installEnvironment()
         
     }
     // 检查所有Path下是否存在tscl.exe
-    if (checkContainsTscl() == false)
+    if (File.Exists("C:\\OPEN_CAD\\bin\\tscl.exe") == false||forceUpdate==true)
     {
-        var binDirectory = "C:\\bin";
+        var binDirectory = "C:\\OPEN_CAD\\bin";
         var downloadDirectory = GetDownloadFolderPath();
         if (Directory.Exists(binDirectory) == false)
         {
@@ -114,9 +114,9 @@ async Task<bool> installEnvironment()
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
         Console.WriteLine("Installing tscl");
         var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
-        if (File.Exists(binSelfPath) == false)
+        if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != "c:/bin")
         {
-            File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}");
+            File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
         }
         if((await Util.cmdAsync2(Environment.CurrentDirectory, "dotnet --list-runtimes")).Contains("Microsoft.NETCore.App 8.0.10")==false)
         {
@@ -147,7 +147,7 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         Console.WriteLine($"Git Proxy: {gitProxy}");
         axios.setProxy(gitProxy);
     }
-    if (await installEnvironment()==false)
+    if (await installEnvironment(fullArgs.Length == 0) == false)
     {
         return;
     }
