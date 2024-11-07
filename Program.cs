@@ -119,7 +119,7 @@ async Task installGit()
     var downloadPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.exe");
     await axios.download(gitUrl, downloadPath);
     // git 静默安装
-    await Util.execAsync(downloadPath, "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
+    await Util.execAsync(downloadPath, "/VERYSILENT","/NORESTART","/NOCANCEL","/SP-","CLOSEAPPLICATIONS","/RESTARTAPPLICATIONS","/COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
 }
 async Task<bool> installEnvironment()
 {
