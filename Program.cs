@@ -114,7 +114,7 @@ async Task<bool> installEnvironment(bool forceUpdate)
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
         Console.WriteLine("Installing tscl");
         var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
-        if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != "c:/bin")
+        if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != binDirectory.ToLower().Replace("\\","/"))
         {
             File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
         }
@@ -125,6 +125,15 @@ async Task<bool> installEnvironment(bool forceUpdate)
             await axios.download("https://download.visualstudio.microsoft.com/download/pr/dfbcd81d-e383-4c92-a174-5079bde0a180/b05bcf7656d1ea900bd23c4f1939a642/dotnet-hosting-8.0.10-win.exe",
                 dotNetPath);
             Console.WriteLine("Installing dotnet-hosting-8.0.10-win.exe");
+            await Util.execAsync(dotNetPath, "/install", "/quiet", "/norestart");
+        }
+        if ((await Util.cmdAsync2(Environment.CurrentDirectory, "dotnet --list-runtimes")).Contains("Microsoft.AspNetCore.App 8.0.10") == false)
+        {
+            var dotNetPath = $"{downloadDirectory}/aspnetcore-runtime-8.0.10-win-x64.exe";
+            Console.WriteLine("Downloading aspnetcore-runtime-8.0.10-win-x64.exe");
+            await axios.download("https://download.visualstudio.microsoft.com/download/pr/a17b907f-8457-45a8-90db-53f2665ee49e/49bccd33593ebceb2847674fe5fd768e/aspnetcore-runtime-8.0.10-win-x64.exe",
+                dotNetPath);
+            Console.WriteLine("Installing aspnetcore-runtime-8.0.10-win-x64.exe");
             await Util.execAsync(dotNetPath, "/install", "/quiet", "/norestart");
         }
     }
