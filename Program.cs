@@ -115,13 +115,13 @@ async Task<bool> installEnvironment()
             var tsclFileInfo = new FileInfo(tsclFilePath);
             if (tsclFileInfo.LastWriteTimeUtc < updated_at)
             {
+                Console.WriteLine($"local tscl is {tsclFileInfo.LastWriteTimeUtc}, latest tscl is {updated_at}");
                 needUpdateTscl = true;
             }
         }
     }
     if (needUpdateTscl)
     {
-        
         var downloadDirectory = GetDownloadFolderPath();
         if (Directory.Exists(binDirectory) == false)
         {
