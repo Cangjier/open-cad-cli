@@ -115,7 +115,7 @@ async Task<bool> installEnvironment()
             var tsclFileInfo = new FileInfo(tsclFilePath);
             if (tsclFileInfo.LastWriteTime < updated_at)
             {
-                Console.WriteLine($"local tscl is {tsclFileInfo.LastWriteTimeUtc}, latest tscl is {updated_at}");
+                Console.WriteLine($"local tscl is {tsclFileInfo.LastWriteTime}, latest tscl is {updated_at}");
                 needUpdateTscl = true;
             }
         }
