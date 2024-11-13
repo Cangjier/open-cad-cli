@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TidyHPC.Extensions;
+using TidyHPC.LiteJson;
 using TidyHPC.Loggers;
 using TidyHPC.Routers.Args;
 
@@ -77,8 +78,9 @@ async Task installGit()
     Console.WriteLine("Installing Git");
     await Util.execAsync(downloadPath, "/VERYSILENT","/NORESTART","/NOCANCEL","/SP-","CLOSEAPPLICATIONS","/RESTARTAPPLICATIONS","/COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\"");
 }
-async Task<bool> installEnvironment(bool forceUpdate)
+async Task<bool> installEnvironment()
 {
+    var binDirectory = "C:\\OPEN_CAD\\bin";
     if (await checkContainsGit()==false)
     {
         try
@@ -96,10 +98,30 @@ async Task<bool> installEnvironment(bool forceUpdate)
         }
         
     }
-    // 检查所有Path下是否存在tscl.exe
-    if (File.Exists("C:\\OPEN_CAD\\bin\\tscl.exe") == false||forceUpdate==true)
+    bool needUpdateTscl = false;
+    var tsclFilePath = Path.Combine(binDirectory, "tscl.exe");
+    if (File.Exists(tsclFilePath) == false)
     {
-        var binDirectory = "C:\\OPEN_CAD\\bin";
+        needUpdateTscl = true;
+    }
+    else
+    {
+        var latestResponse = await axios.get("https://api.github.com/repos/Cangjier/type-sharp/releases/latest");
+        if(latestResponse.data is Json dataJson)
+        {
+            var assets = dataJson["assets"];
+            var asset = assets.Find(item => Path.GetFileName(item.Read("browser_download_url", string.Empty)) == "tscl.exe");
+            var updated_at = asset.Read("updated_at", DateTime.MinValue);
+            var tsclFileInfo = new FileInfo(tsclFilePath);
+            if (tsclFileInfo.LastWriteTimeUtc < updated_at)
+            {
+                needUpdateTscl = true;
+            }
+        }
+    }
+    if (needUpdateTscl)
+    {
+        
         var downloadDirectory = GetDownloadFolderPath();
         if (Directory.Exists(binDirectory) == false)
         {
@@ -140,7 +162,6 @@ async Task<bool> installEnvironment(bool forceUpdate)
     return true;
 }
 
-
 ArgsRouter argsRouter = new();
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
@@ -156,7 +177,7 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         Console.WriteLine($"Git Proxy: {gitProxy}");
         axios.setProxy(gitProxy);
     }
-    if (await installEnvironment(fullArgs.Length == 0) == false)
+    if (await installEnvironment() == false)
     {
         return;
     }
