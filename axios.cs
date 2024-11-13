@@ -36,7 +36,13 @@ public class axios
 
     public static async Task<axiosResponse> get(string url)
     {
-        return await get(url, null);
+        return await get(url, new axiosConfig()
+        {
+            headers = new Dictionary<string, string>()
+            {
+                ["User-Agent"] = "OpenCad.Cli"
+            }
+        });
     }
 
     public static async Task<axiosResponse> get(string url, axiosConfig? config)

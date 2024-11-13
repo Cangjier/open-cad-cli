@@ -135,7 +135,6 @@ async Task<bool> installEnvironment()
         Console.WriteLine("Downloading tscl");
         await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
         Console.WriteLine("Installing tscl");
-        var binSelfPath = $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}";
         if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != binDirectory.ToLower().Replace("\\","/"))
         {
             File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
