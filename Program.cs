@@ -187,7 +187,7 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         return;
     }
     var cmdTail = "--application-name open-cad --repository https://github.com/Cangjier/open-cad.git";
-    var cmd = $"tscl run {fullArgs.Join(" ")} {cmdTail}";
+    var cmd = $"tscl run {fullArgs.Join(" ", item => $"\"{item}\"")} {cmdTail}";
     if (fullArgs.Length == 1 && fullArgs[0] == "list")
     {
         cmd = $"tscl list {cmdTail}";
