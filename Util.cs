@@ -1,11 +1,46 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text;
 using TidyHPC.Extensions;
-using TidyHPC.LiteJson;
 
 namespace OpenCad.Cli;
 internal class Util
 {
+    static Util()
+    {
+        AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+        {
+            foreach (var process in BackgroundProcesses.Values)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+
+                }
+            }
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+        {
+            foreach (var process in BackgroundProcesses.Values)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+
+                }
+            }
+        };
+    }
+
+    public static ConcurrentDictionary<int,Process> BackgroundProcesses { get; } = new();
+
     public static UTF8Encoding UTF8 { get; } = new(false);
 
     public static string GetShell()
@@ -53,6 +88,7 @@ internal class Util
             using Process process = new() { StartInfo = startInfo };
             // 启动进程
             process.Start();
+            BackgroundProcesses.TryAdd(process.Id, process);
             // 读取标准输出并打印  
             process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
             process.BeginOutputReadLine();
@@ -62,6 +98,7 @@ internal class Util
             process.BeginErrorReadLine();
             // 等待进程退出
             await process.WaitForExitAsync();
+            BackgroundProcesses.TryRemove(process.Id, out _);
 
             // 返回进程的退出代码
             return process.ExitCode;
@@ -89,6 +126,7 @@ internal class Util
             };
 
             using Process process = new() { StartInfo = startInfo };
+            
             List<string> lines = new();
             process.OutputDataReceived += (sender, e) =>
             {
@@ -99,10 +137,12 @@ internal class Util
             };
             // 启动进程
             process.Start();
+            BackgroundProcesses.TryAdd(process.Id, process);
             // 开始异步读取输出
             process.BeginOutputReadLine();
             // 等待进程退出
             await process.WaitForExitAsync();
+            BackgroundProcesses.TryRemove(process.Id, out _);
 
             // 返回进程的退出代码
             return lines.Join("\n");
@@ -120,7 +160,9 @@ internal class Util
         process.StartInfo.FileName = path;
         args.Foreach(process.StartInfo.ArgumentList.Add);
         process.Start();
+        BackgroundProcesses.TryAdd(process.Id, process);
         await process.WaitForExitAsync();
+        BackgroundProcesses.TryRemove(process.Id, out _);
         return process.ExitCode;
     }
 }
