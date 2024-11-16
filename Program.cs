@@ -217,6 +217,11 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
             await setGitProxy(systemProxyString);
             isSettedGitProxy = true;
         }
+        else if(string.IsNullOrEmpty(gitProxy)&&await Util.IsConnect("http://127.0.0.1:7897/"))
+        {
+            await setGitProxy(systemProxyString);
+            isSettedGitProxy = true;
+        }
         if (await installEnvironment() == false)
         {
             return;

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using TidyHPC.Extensions;
 
@@ -39,7 +40,7 @@ internal class Util
         };
     }
 
-    public static ConcurrentDictionary<int,Process> BackgroundProcesses { get; } = new();
+    public static ConcurrentDictionary<int, Process> BackgroundProcesses { get; } = new();
 
     public static UTF8Encoding UTF8 { get; } = new(false);
 
@@ -126,7 +127,7 @@ internal class Util
             };
 
             using Process process = new() { StartInfo = startInfo };
-            
+
             List<string> lines = new();
             process.OutputDataReceived += (sender, e) =>
             {
@@ -164,5 +165,23 @@ internal class Util
         await process.WaitForExitAsync();
         BackgroundProcesses.TryRemove(process.Id, out _);
         return process.ExitCode;
+    }
+
+    public static async Task<bool> IsConnect(string proxy)
+    {
+        HttpClient client = new HttpClient(new SocketsHttpHandler
+        {
+            Proxy = new WebProxy(proxy),
+            ConnectTimeout = TimeSpan.FromSeconds(3), // 仅设置连接超时
+        });
+        try
+        {
+            var response = await client.GetAsync("https://www.google.com");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
