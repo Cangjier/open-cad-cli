@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OpenCad.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "caa-installer"
+    }
+  }
+}
