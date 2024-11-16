@@ -220,8 +220,10 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         }
         else if(string.IsNullOrEmpty(gitProxy)&&await Util.IsConnect("http://127.0.0.1:7897/"))
         {
-            Console.WriteLine($"Set Git Proxy with http://127.0.0.1:7897/");
+            Console.WriteLine($"Use Proxy: http://127.0.0.1:7897/");
+            Console.WriteLine($"Set Git Proxy:  http://127.0.0.1:7897/");
             await setGitProxy("http://127.0.0.1:7897/");
+            axios.setProxy("http://127.0.0.1:7897/");
             isSettedGitProxy = true;
         }
         if (await installEnvironment() == false)
