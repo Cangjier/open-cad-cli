@@ -214,12 +214,14 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         }
         if (string.IsNullOrEmpty(gitProxy) && string.IsNullOrEmpty(systemProxyString) == false)
         {
+            Console.WriteLine($"Set Git Proxy with {systemProxyString}");
             await setGitProxy(systemProxyString);
             isSettedGitProxy = true;
         }
         else if(string.IsNullOrEmpty(gitProxy)&&await Util.IsConnect("http://127.0.0.1:7897/"))
         {
-            await setGitProxy(systemProxyString);
+            Console.WriteLine($"Set Git Proxy with http://127.0.0.1:7897/");
+            await setGitProxy("http://127.0.0.1:7897/");
             isSettedGitProxy = true;
         }
         if (await installEnvironment() == false)
