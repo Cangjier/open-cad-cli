@@ -11,6 +11,32 @@ using TidyHPC.Routers.Args;
 
 var binDirectory = "C:\\OPEN_CAD\\bin";
 
+bool IsFileLocked(string filePath)
+{
+    if(File.Exists(filePath)==false)
+    {
+        return false;
+    }
+    FileStream? stream = null;
+
+    try
+    {
+        // 尝试以只写模式打开文件，不共享
+        stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+    }
+    catch (IOException)
+    {
+        // 如果抛出 IOException，表示文件被占用
+        return true;
+    }
+    finally
+    {
+        stream?.Close(); // 关闭流释放文件
+    }
+
+    return false;
+}
+
 string GetDownloadFolderPath()
 {
     if(Environment.OSVersion.Platform != PlatformID.Win32NT)
@@ -145,8 +171,15 @@ async Task<bool> installTscl()
                 Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
             }
             Console.WriteLine("Downloading tscl");
-            await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
-            Console.WriteLine("Installing tscl");
+            var tsclPath = Path.Combine(downloadDirectory, "tscl.exe");
+            if(IsFileLocked(tsclPath))
+            {
+                await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe.update");
+            }
+            else
+            {
+                await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
+            }
             if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != binDirectory.ToLower().Replace("\\", "/"))
             {
                 File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
