@@ -3,67 +3,14 @@ using OpenCad.Cli;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using TidyHPC.Extensions;
 using TidyHPC.LiteJson;
 using TidyHPC.Loggers;
 using TidyHPC.Routers.Args;
 
-var binDirectory = "C:\\OPEN_CAD\\bin";
 
-bool IsFileLocked(string filePath)
-{
-    if(File.Exists(filePath)==false)
-    {
-        return false;
-    }
-    FileStream? stream = null;
 
-    try
-    {
-        // 尝试以只写模式打开文件，不共享
-        stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-    }
-    catch (IOException)
-    {
-        // 如果抛出 IOException，表示文件被占用
-        return true;
-    }
-    finally
-    {
-        stream?.Close(); // 关闭流释放文件
-    }
-
-    return false;
-}
-
-string GetDownloadFolderPath()
-{
-    if(Environment.OSVersion.Platform != PlatformID.Win32NT)
-    {
-        string downloadFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-
-        // 打开注册表项路径
-        using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"))
-        {
-            if (key != null&& key.GetValue("{374DE290-123F-4565-9164-39C4925E467B}") is string valueString)
-            {
-                // 获取 "Downloads" 文件夹的路径
-                downloadFolderPath = valueString;
-
-                // 如果路径包含环境变量, 需要解析为完整路径
-                downloadFolderPath = Environment.ExpandEnvironmentVariables(downloadFolderPath);
-            }
-        }
-
-        return downloadFolderPath;
-    }
-    else
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-    }
-
-}
+var binDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OPEN_CAD", "bin");
 
 bool checkContainsTscl()
 {
@@ -106,6 +53,10 @@ async Task unsetGitProxy()
 
 async Task<bool> installGit()
 {
+    if(OperatingSystem.IsWindows() == false)
+    {
+        return true;
+    }
     if (await checkContainsGit() == false)
     {
         try
@@ -132,7 +83,7 @@ async Task<bool> installGit()
     return true;
 }
 
-async Task<bool> installTscl()
+async Task<bool> installTscl_Windows()
 {
     try
     {
@@ -160,7 +111,7 @@ async Task<bool> installTscl()
         }
         if (needUpdateTscl)
         {
-            var downloadDirectory = GetDownloadFolderPath();
+            var downloadDirectory = Util.GetDownloadFolderPath();
             if (Directory.Exists(binDirectory) == false)
             {
                 Directory.CreateDirectory(binDirectory);
@@ -168,21 +119,20 @@ async Task<bool> installTscl()
             var path = Environment.GetEnvironmentVariable("Path");
             if (path?.Contains(binDirectory) == false)
             {
-                Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Environment.SetEnvironmentVariable("Path", $"{Environment.GetEnvironmentVariable("Path")};{binDirectory}", EnvironmentVariableTarget.User);
+                }
             }
             Console.WriteLine("Downloading tscl");
             var tsclPath = Path.Combine(downloadDirectory, "tscl.exe");
-            if(IsFileLocked(tsclPath))
+            if(Util.IsFileLocked(tsclPath))
             {
                 await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe.update");
             }
             else
             {
                 await axios.download("https://github.com/Cangjier/type-sharp/releases/download/latest/tscl.exe", $"{binDirectory}\\tscl.exe");
-            }
-            if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != binDirectory.ToLower().Replace("\\", "/"))
-            {
-                File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
             }
             if ((await Util.cmdAsync2(Environment.CurrentDirectory, "dotnet --list-runtimes")).Contains("Microsoft.NETCore.App 8.0.10") == false)
             {
@@ -212,20 +162,58 @@ async Task<bool> installTscl()
     return true;
 }
 
+async Task installTscl_Linux()
+{
+    var tsclDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".tscl", "bin");
+    var tsclPath = Path.Combine(tsclDirectory, "tscl");
+    if (File.Exists(tsclPath) == false)
+    {
+        await Util.cmdAsync(Environment.CurrentDirectory, "wget --no-cache -qO- https://raw.githubusercontent.com/Cangjier/type-sharp/main/install.sh | bash");
+    }
+}
+
+async Task installOpenCad()
+{
+    if (Path.GetDirectoryName(Environment.ProcessPath).Replace("\\", "/").ToLower() != binDirectory.ToLower().Replace("\\", "/"))
+    {
+        File.Copy(Environment.ProcessPath, $"{binDirectory}\\{Path.GetFileName(Environment.ProcessPath)}", true);
+    }
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        await Util.cmdAsync(Environment.CurrentDirectory, """
+            {
+            if ! grep -q 'export PATH=$PATH:${HOME}/OPEN_CAD/bin' ~/.bashrc; then
+                echo 'export PATH=$PATH:${HOME}/OPEN_CAD/bin' >>~/.bashrc
+                echo "Added ${HOME}/OPEN_CAD/bin to PATH in .bashrc"
+            fi
+            }
+            """);
+    }
+}
+
 async Task<bool> installEnvironment()
 {
     if (await installGit() == false)
     {
         return false;
     }
-    if (await installTscl() == false)
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {
-        return false;
+        if (await installTscl_Windows() == false)
+        {
+            return false;
+        }
     }
+    else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        await installTscl_Linux();
+    }
+    await installOpenCad();
     return true;
 }
 
 ArgsRouter argsRouter = new();
+
 argsRouter.Register(async ([Args] string[] fullArgs) =>
 {
     var gitProxy = await getGitProxy();

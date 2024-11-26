@@ -1,6 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Win32;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using TidyHPC.Extensions;
 
@@ -183,5 +185,59 @@ internal class Util
         {
             return false;
         }
+    }
+
+    public static bool IsFileLocked(string filePath)
+    {
+        if (File.Exists(filePath) == false)
+        {
+            return false;
+        }
+        FileStream? stream = null;
+
+        try
+        {
+            // 尝试以只写模式打开文件，不共享
+            stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException)
+        {
+            // 如果抛出 IOException，表示文件被占用
+            return true;
+        }
+        finally
+        {
+            stream?.Close(); // 关闭流释放文件
+        }
+
+        return false;
+    }
+
+    public static string GetDownloadFolderPath()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            string downloadFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+            // 打开注册表项路径
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"))
+            {
+                if (key != null && key.GetValue("{374DE290-123F-4565-9164-39C4925E467B}") is string valueString)
+                {
+                    // 获取 "Downloads" 文件夹的路径
+                    downloadFolderPath = valueString;
+
+                    // 如果路径包含环境变量, 需要解析为完整路径
+                    downloadFolderPath = Environment.ExpandEnvironmentVariables(downloadFolderPath);
+                }
+            }
+
+            return downloadFolderPath;
+        }
+        else
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        }
+
     }
 }
