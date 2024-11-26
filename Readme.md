@@ -1,4 +1,2 @@
 ﻿# OpenCad.Cli
 
-
-
