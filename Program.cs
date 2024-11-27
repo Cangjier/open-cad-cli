@@ -168,7 +168,7 @@ async Task installTscl_Linux()
     var tsclPath = Path.Combine(tsclDirectory, "tscl");
     if (File.Exists(tsclPath) == false)
     {
-        await Util.cmdAsync(Environment.CurrentDirectory, "wget --no-cache -qO- https://raw.githubusercontent.com/Cangjier/type-sharp/main/install.sh | bash");
+        await Util.cmdAsync(Environment.CurrentDirectory, "wget --no-cache -qO- https://raw.githubusercontent.com/Cangjier/type-sharp/main/install.sh | bash && source ~/.bashrc");
     }
 }
 
