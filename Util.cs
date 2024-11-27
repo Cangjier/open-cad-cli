@@ -113,6 +113,38 @@ internal class Util
         }
     }
 
+    public static async Task<int> cmdAsyncInShell(string workingDirectory, string commandLine)
+    {
+        try
+        {
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = Util.GetShell(),
+                Arguments = Util.GetShellArguments(commandLine),
+                UseShellExecute = false,
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+            };
+
+            using Process process = new() { StartInfo = startInfo };
+            // 启动进程
+            process.Start();
+            BackgroundProcesses.TryAdd(process.Id, process);
+            // 等待进程退出
+            await process.WaitForExitAsync();
+            BackgroundProcesses.TryRemove(process.Id, out _);
+
+            // 返回进程的退出代码
+            return process.ExitCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred: " + ex.Message);
+            return -1; // 错误时返回 -1
+        }
+    }
+
     public static async Task<string> cmdAsync2(string workingDirectory, string commandLine)
     {
         try

@@ -263,7 +263,7 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
         {
             cmd = $"tscl list {cmdTail}";
         }
-        await Util.cmdAsync(Environment.CurrentDirectory, cmd);
+        await Util.cmdAsyncInShell(Environment.CurrentDirectory, cmd);
     }
     catch
     {
