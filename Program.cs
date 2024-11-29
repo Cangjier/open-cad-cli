@@ -239,13 +239,29 @@ argsRouter.Register(async ([Args] string[] fullArgs) =>
             await setGitProxy(systemProxyString);
             isSettedGitProxy = true;
         }
-        else if(string.IsNullOrEmpty(gitProxy)&&await Util.IsConnect("http://127.0.0.1:7897/"))
+        else if(string.IsNullOrEmpty(gitProxy))
         {
-            Console.WriteLine($"Use Proxy: http://127.0.0.1:7897/");
-            Console.WriteLine($"Set Git Proxy:  http://127.0.0.1:7897/");
-            await setGitProxy("http://127.0.0.1:7897/");
-            axios.setProxy("http://127.0.0.1:7897/");
-            isSettedGitProxy = true;
+            async Task<bool> connectAndSet(int port)
+            {
+                if (await Util.IsConnect($"http://127.0.0.1:{port}/"))
+                {
+                    Console.WriteLine($"Use Proxy: http://127.0.0.1:{port}/");
+                    Console.WriteLine($"Set Git Proxy:  http://127.0.0.1:{port}/");
+                    await setGitProxy($"http://127.0.0.1:{port}/");
+                    axios.setProxy($"http://127.0.0.1:{port}/");
+                    isSettedGitProxy = true;
+                    return true;
+                }
+                return false;
+            }
+            int[] possiblePorts = [7897, 33210];
+            foreach (var port in possiblePorts)
+            {
+                if (await connectAndSet(port))
+                {
+                    break;
+                }
+            }
         }
         if (await installEnvironment() == false)
         {
